@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  emailVerified Boolean      @default(false)
+  name          String       @default("")
+  image         String?
+  role          Role         @default(STUDENT)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  studentInfo   StudentInfo?
+  devices       Device[]
+  scanLogs      ScanLog[]
+  sessions      Session[]
+  accounts      Account[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@unique([identifier, value])
+}
+
+model StudentInfo {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  cne           String   @unique
+  apogee        String   @unique
+  filiere       String
+  etablissement String
+  photoUrl      String?
+  cardActive    Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  deviceName  String
+  fingerprint String   @unique
+  confirmed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model ScanLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  scannedBy String
+  location  String?
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  STUDENT
+  SCOLARITE
+  ADMIN
+}
