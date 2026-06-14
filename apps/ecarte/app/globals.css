@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+  --uca-blue: #102447;
+  --uca-blue-dark: #0a1830;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

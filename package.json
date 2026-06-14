@@ -1,0 +1,16 @@
+{
+  "name": "carte-etudiant",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:ecarte": "pnpm --filter ecarte dev --port 3001",
+    "build:ecarte": "pnpm --filter ecarte build",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
+}
