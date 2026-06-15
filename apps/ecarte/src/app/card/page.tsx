@@ -102,8 +102,17 @@ function DeviceIcon({ active }: { active: boolean }) {
 
 // ─── Circular Timer ──────────────────────────────────────────────────────────
 
-function CircularTimer({ timeLeft, total = 300 }: { timeLeft: number; total?: number }) {
-  const radius = 26;
+function CircularTimer({
+  timeLeft,
+  total = 300,
+  large = false,
+}: {
+  timeLeft: number;
+  total?: number;
+  large?: boolean;
+}) {
+  const radius = large ? 36 : 26;
+  const svgSize = large ? 88 : 64;
   const circumference = 2 * Math.PI * radius;
   const progress = timeLeft / total;
   const strokeDashoffset = circumference * (1 - progress);
@@ -114,17 +123,30 @@ function CircularTimer({ timeLeft, total = 300 }: { timeLeft: number; total?: nu
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="relative w-16 h-16 flex items-center justify-center">
-        {/* Track */}
-        <svg className="absolute inset-0 -rotate-90" width="64" height="64">
-          <circle cx="32" cy="32" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+      <div
+        className="relative flex items-center justify-center"
+        style={{ width: svgSize, height: svgSize }}
+      >
+        <svg
+          className="absolute inset-0 -rotate-90"
+          width={svgSize}
+          height={svgSize}
+        >
           <circle
-            cx="32"
-            cy="32"
+            cx={svgSize / 2}
+            cy={svgSize / 2}
+            r={radius}
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={large ? 4 : 3}
+          />
+          <circle
+            cx={svgSize / 2}
+            cy={svgSize / 2}
             r={radius}
             fill="none"
             stroke={urgent ? '#ef4444' : '#f97316'}
-            strokeWidth="3"
+            strokeWidth={large ? 4 : 3}
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -132,7 +154,7 @@ function CircularTimer({ timeLeft, total = 300 }: { timeLeft: number; total?: nu
           />
         </svg>
         <span
-          className="font-bold font-mono text-sm tabular-nums"
+          className={`font-bold font-mono tabular-nums ${large ? 'text-base' : 'text-sm'}`}
           style={{ color: urgent ? '#ef4444' : '#f97316' }}
         >
           {display}
@@ -177,6 +199,84 @@ function OfflineBanner({ cachedAt }: { cachedAt?: Date }) {
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── QR Zone (extracted for reuse) ──────────────────────────────────────────
+
+function QRZone({
+  cardState,
+  qrToken,
+  isOffline,
+  timeLeft,
+  large = false,
+}: {
+  cardState: CardState;
+  qrToken: string | null;
+  isOffline: boolean;
+  timeLeft: number;
+  large?: boolean;
+}) {
+  const qrSize = large ? 260 : 200;
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden h-full flex flex-col"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '0.5px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      {cardState === 'active' && qrToken && !isOffline ? (
+        /* Active: QR fills top, timer pinned bottom */
+        <div className="flex flex-col h-full p-4 gap-4">
+          {/* QR card — grows to fill all available space */}
+          <div className="relative bg-white rounded-2xl p-4 flex-1 flex items-center justify-center min-h-0">
+            {(['tl', 'tr', 'bl', 'br'] as const).map(pos => (
+              <CornerMarker key={pos} position={pos} />
+            ))}
+            <QRCodeSVG
+              value={qrToken}
+              size={qrSize}
+              level="H"
+              includeMargin={false}
+              style={{ maxWidth: '100%', height: 'auto' }}
+            />
+          </div>
+          {/* Timer — fixed height at bottom */}
+          <div className="flex-shrink-0 flex justify-center py-2">
+            <CircularTimer timeLeft={timeLeft} large={large} />
+          </div>
+        </div>
+      ) : cardState === 'outOfHours' ? (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="w-12 h-12 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="1.8">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <p className="text-white/70 text-sm font-medium">Hors heures</p>
+          <p className="text-white/40 text-xs mt-1">Le QR est disponible de 7h à 21h uniquement.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="1.8">
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+              <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
+              <path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
+              <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+              <line x1="12" y1="20" x2="12.01" y2="20" strokeLinecap="round" />
+            </svg>
+          </div>
+          <p className="text-orange-400 text-sm font-medium">QR indisponible hors ligne</p>
+          <p className="text-white/40 text-xs mt-1">Connectez-vous pour générer votre QR.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -260,9 +360,7 @@ export default function CardPage() {
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ background: '#0b1d3a' }}>
         <div className="text-center">
-          <div
-            className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"
-          />
+          <div className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white/60 text-sm">Chargement de votre carte…</p>
         </div>
       </main>
@@ -329,7 +427,7 @@ export default function CardPage() {
   // ── Main view (active | outOfHours) ────────────────────────────────────
   return (
     <main
-      className="min-h-screen pb-24"
+      className="min-h-screen md:h-screen md:flex md:flex-col pb-24 "
       style={{
         background: '#0b1d3a',
         backgroundImage:
@@ -340,8 +438,8 @@ export default function CardPage() {
       {/* Offline banner */}
       {isOffline && <OfflineBanner />}
 
-      {/* App header */}
-      <header className="flex items-center gap-3 px-4 py-3">
+      {/* App header — full width on desktop, no max-w */}
+      <header className="flex items-center gap-3 px-4 py-3 md:px-6 md:shrink-0">
         <div
           className="w-7 h-7 rounded-md flex items-center justify-center"
           style={{ background: 'rgba(255,255,255,0.08)' }}
@@ -353,88 +451,39 @@ export default function CardPage() {
           </svg>
         </div>
         <span className="text-white/70 text-sm font-medium">E-Carte UCA</span>
-        <span className="text-white/30 text-xs ml-auto">Mobile ID</span>
       </header>
 
-      <div className="px-4 space-y-4 max-w-sm mx-auto">
-        {/* E-Carte */}
+  
+      <div className="md:hidden px-4 space-y-4 max-w-sm mx-auto">
         {card && <ECarteCard card={card} />}
 
-        {/* QR Zone */}
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '0.5px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          {cardState === 'active' && qrToken && !isOffline ? (
-            <div className="p-4 flex flex-col items-center gap-4">
-              {/* QR card with corner markers */}
-              <div className="relative bg-white rounded-2xl p-4 w-full flex justify-center">
-                {/* Corner markers */}
-                {(['tl','tr','bl','br'] as const).map(pos => (
-                  <CornerMarker key={pos} position={pos} />
-                ))}
-                <QRCodeSVG
-                  value={qrToken}
-                  size={200}
-                  level="H"
-                  includeMargin={false}
-                />
-              </div>
-              {/* Timer */}
-              <CircularTimer timeLeft={timeLeft} />
-            </div>
-          ) : cardState === 'outOfHours' ? (
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="1.8">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              </div>
-              <p className="text-white/70 text-sm font-medium">Hors heures</p>
-              <p className="text-white/40 text-xs mt-1">
-                Le QR est disponible de 7h à 21h uniquement.
-              </p>
-            </div>
-          ) : (
-            /* Offline: show placeholder */
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="1.8">
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                  <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
-                  <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
-                  <path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
-                  <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
-                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                  <line x1="12" y1="20" x2="12.01" y2="20" strokeLinecap="round" />
-                </svg>
-              </div>
-              <p className="text-orange-400 text-sm font-medium">QR indisponible hors ligne</p>
-              <p className="text-white/40 text-xs mt-1">
-                Connectez-vous pour générer votre QR.
-              </p>
-            </div>
-          )}
+        <QRZone
+          cardState={cardState}
+          qrToken={qrToken}
+          isOffline={isOffline}
+          timeLeft={timeLeft}
+          large={false}
+        />
+      </div>
+
+      <div className="hidden md:grid md:grid-cols-2 md:gap-4 md:flex-1 md:min-h-0 px-6 pb-20">
+        {/* Left: ID card — scrollable if content overflows */}
+        <div className="overflow-auto">
+          {card && <ECarteCard card={card} desktop />}
         </div>
 
-        {/* Manual refresh button — visible only when active & online */}
-        {cardState === 'active' && !isOffline && (
-          <button
-            onClick={loadQR}
-            className="w-full py-3 rounded-xl text-sm font-medium transition-colors"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.5)',
-              border: '0.5px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            Rafraîchir manuellement
-          </button>
-        )}
+        {/* Right: QR zone */}
+        <div className="flex flex-col gap-4 min-h-0">
+          <div className="flex-1 min-h-0">
+            <QRZone
+              cardState={cardState}
+              qrToken={qrToken}
+              isOffline={isOffline}
+              timeLeft={timeLeft}
+              large={true}
+            />
+          </div>
+        </div>
       </div>
 
       <BottomNav />
