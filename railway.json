@@ -2,6 +2,6 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "buildCommand": "npm install -g pnpm@10 && HUSKY=0 pnpm install --frozen-lockfile && npx prisma generate && cd apps/api && pnpm run build",
-    "startCommand": "node apps/api/dist/main"
+    "startCommand": "npx prisma migrate deploy && node apps/api/dist/main"
   }
 }
